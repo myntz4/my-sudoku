@@ -1,8 +1,9 @@
-const cacheName = 'sudoku-v1';
+const cacheName = 'sudoku-v2';
 const assets = [
   './',
-  './Sudoku_App.html',
-  './manifest.json'
+  './index.html',
+  './manifest.json',
+  './icon.png'
 ];
 
 self.addEventListener('install', e => {
