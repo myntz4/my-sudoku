@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sudoku">
+<meta name="theme-color" content="#4361ee">
+<title>Sudoku</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f0f4ff;--surface:#fff;--primary:#4361ee;--primary-light:#e8ecff;
+  --accent:#f72585;--success:#06d6a0;--warn:#ffd166;--text:#1a1a2e;
+  --text-muted:#8892b0;--border:#d8e1ff;--cell-bg:#fff;--cell-hover:#eef0ff;
+  --cell-selected:#4361ee;--cell-same:#d0d8ff;--cell-related:#eef0ff;
+  --cell-error:#ffe0e6;--shadow:0 4px 24px rgba(67,97,238,.10);--radius:16px;
+}
+body.dark{
+  --bg:#0f1117;--surface:#1a1d27;--primary:#6c8cff;--primary-light:#1e2340;
+  --accent:#f72585;--text:#e8eaf6;--text-muted:#6b7280;--border:#2a2f45;
+  --cell-bg:#1a1d27;--cell-related:#1e2236;--cell-same:#252b45;
+  --cell-selected:#4361ee;--cell-error:#2d1520;--shadow:0 4px 24px rgba(0,0,0,.4);
+}
+body.dark .cell.error{color:#ff6b7a!important}
+body.dark .wbtn.sec{background:#1e2340;color:#6c8cff}
+body.dark .wbtn.sec:hover{background:#252b45}
+body.dark .cell:nth-child(3n):not(:nth-child(9n)){border-right:2px solid #3a4060}
+body.dark .cell:nth-child(n+19):nth-child(-n+27){border-bottom:2px solid #3a4060}
+body.dark .cell:nth-child(n+46):nth-child(-n+54){border-bottom:2px solid #3a4060}
+.dm-btn{background:none;border:none;cursor:pointer;padding:6px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  transition:background .2s;color:var(--text-muted)}
+.dm-btn:hover{background:var(--primary-light)}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+.header{width:100%;background:var(--surface);box-shadow:0 2px 12px rgba(67,97,238,.08);
+  padding:14px 20px 10px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100}
+.logo{font-size:22px;font-weight:900;color:var(--primary);letter-spacing:-.5px}
+.logo span{color:var(--accent)}
+.hstats{display:flex;gap:16px;align-items:center}
+.stat{display:flex;flex-direction:column;align-items:center;line-height:1}
+.sval{font-size:17px;font-weight:800;color:var(--text)}
+.slbl{font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.pbtn{background:none;border:none;cursor:pointer;padding:6px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:20px;transition:background .2s}
+.pbtn:hover{background:var(--primary-light);color:var(--primary)}
+.diffbar{display:flex;gap:8px;padding:12px 16px;width:100%;max-width:400px;justify-content:center}
+.dbtn{flex:1;padding:8px 4px;border:2px solid var(--border);border-radius:50px;background:var(--surface);
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all .2s}
+.dbtn.active{border-color:var(--primary);background:var(--primary);color:#fff}
+.dbtn:hover:not(.active){border-color:var(--primary);color:var(--primary)}
+.game{width:100%;max-width:400px;padding:0 12px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.bwrap{width:100%;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px}
+.board{display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);
+  width:100%;aspect-ratio:1;border:2.5px solid var(--text);border-radius:8px;overflow:hidden}
+.cell{display:flex;align-items:center;justify-content:center;
+  font-size:clamp(14px,4vw,20px);font-weight:700;cursor:pointer;background:var(--cell-bg);
+  color:var(--text);border:1px solid var(--border);transition:background .15s,color .15s;
+  user-select:none;-webkit-user-select:none;position:relative}
+/* box borders */
+.cell:nth-child(3n):not(:nth-child(9n)){border-right:2px solid #aab4d8}
+.cell:nth-child(n+19):nth-child(-n+27){border-bottom:2px solid #aab4d8}
+.cell:nth-child(n+46):nth-child(-n+54){border-bottom:2px solid #aab4d8}
+.cell.input{color:var(--primary)}
+.cell.related{background:var(--cell-related)}
+.cell.samenum{background:var(--cell-same)}
+.cell.selected{background:var(--cell-selected)!important;color:#fff!important}
+.cell.error{background:var(--cell-error);color:#e63946!important}
+.cell.given{font-weight:900}
+.notes{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  width:100%;height:100%;padding:2px;position:absolute;inset:0}
+.nn{font-size:clamp(7px,1.8vw,10px);font-weight:700;display:flex;align-items:center;
+  justify-content:center;color:var(--text-muted);line-height:1}
+.cell.selected .nn{color:rgba(255,255,255,.8)}
+.tools{display:flex;gap:8px;width:100%;justify-content:center}
+.tbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 4px 8px;background:var(--surface);border:2px solid var(--border);
+  border-radius:12px;cursor:pointer;transition:all .2s;font-family:'Nunito',sans-serif;gap:3px}
+.tbtn .ti{font-size:20px;line-height:1}
+.tbtn .tl{font-size:11px;font-weight:700;color:var(--text-muted)}
+.tbtn.active{border-color:var(--primary);background:var(--primary-light)}
+.tbtn.active .tl{color:var(--primary)}
+.tbtn:hover:not(.active){border-color:var(--primary)}
+.hc{font-size:10px;font-weight:800;color:var(--accent);margin-top:-2px}
+.numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;width:100%}
+.nbtn{aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:var(--surface);
+  font-family:'Nunito',sans-serif;font-size:clamp(16px,5vw,22px);font-weight:800;
+  color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;position:relative}
+.nbtn:hover{background:var(--primary-light);border-color:var(--primary)}
+.nbtn:active{transform:scale(.93)}
+.nbtn.done{opacity:.3;pointer-events:none}
+.rem{position:absolute;bottom:3px;right:5px;font-size:9px;font-weight:800;color:var(--text-muted);line-height:1}
+.ngbtn{width:100%;padding:14px;border-radius:50px;border:none;
+  background:linear-gradient(135deg,var(--primary),#7b2ff7);color:#fff;
+  font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;
+  box-shadow:0 4px 16px rgba(67,97,238,.3);transition:all .2s;letter-spacing:.3px}
+.ngbtn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(67,97,238,.4)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;
+  align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:all}
+.wcard{background:var(--surface);border-radius:24px;padding:32px 28px;max-width:320px;
+  width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);
+  transform:scale(.85);transition:transform .3s}
+.overlay.show .wcard{transform:scale(1)}
+.wemoji{font-size:56px;margin-bottom:8px}
+.wtitle{font-size:28px;font-weight:900;color:var(--primary);margin-bottom:6px}
+.wsub{font-size:15px;color:var(--text-muted);margin-bottom:20px;line-height:1.5}
+.wstats{display:flex;justify-content:center;gap:24px;margin-bottom:24px}
+.wsv{font-size:22px;font-weight:900;color:var(--text)}
+.wsl{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase}
+.wbtn{width:100%;padding:14px;border-radius:50px;border:none;background:var(--primary);
+  color:#fff;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;
+  cursor:pointer;transition:all .2s;margin-bottom:10px}
+.wbtn:hover{background:#3251d3;transform:translateY(-1px)}
+.wbtn.sec{background:var(--primary-light);color:var(--primary)}
+.wbtn.sec:hover{background:#d0d8ff}
+.povl{position:fixed;inset:0;background:rgba(10,10,30,.85);display:flex;
+  align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;transition:opacity .3s;flex-direction:column;gap:20px}
+.povl.show{opacity:1;pointer-events:all}
+.ptxt{font-size:32px;font-weight:900;color:#fff}
+.rbtn{padding:14px 40px;border-radius:50px;border:none;background:var(--primary);
+  color:#fff;font-family:'Nunito',sans-serif;font-size:17px;font-weight:800;cursor:pointer}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--text);color:#fff;padding:12px 24px;border-radius:50px;
+  font-size:14px;font-weight:700;z-index:300;transition:transform .3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:150;overflow:hidden}
+.star{position:absolute;width:10px;height:10px;border-radius:50%;
+  animation:sf 1.5s ease-out forwards;opacity:0}
+@keyframes sf{0%{transform:translateY(-20px) scale(0);opacity:1}80%{opacity:1}100%{transform:translateY(100vh) scale(.5) rotate(720deg);opacity:0}}
+.bp{height:24px}
+@media(max-width:360px){.dbtn{font-size:11px;padding:6px 2px}.nbtn{font-size:16px}}
+@media(min-height:700px){.game{gap:14px}.numpad{gap:8px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">Su<span>·</span>doku</div>
+  <div class="hstats">
+    <div class="stat"><div class="sval" id="td">0:00</div><div class="slbl">Time</div></div>
+    <div class="stat"><div class="sval" id="md">0</div><div class="slbl">Mistakes</div></div>
+    <button class="dm-btn" id="dmbtn" title="Toggle dark mode">🌙</button>
+    <button class="pbtn" id="pbtn">⏸</button>
+  </div>
+</div>
+<div class="diffbar">
+  <button class="dbtn active" data-d="easy">Easy</button>
+  <button class="dbtn" data-d="medium">Medium</button>
+  <button class="dbtn" data-d="hard">Hard</button>
+  <button class="dbtn" data-d="expert">Expert</button>
+</div>
+<div class="game">
+  <div class="bwrap"><div class="board" id="board"></div></div>
+  <div class="tools">
+    <button class="tbtn" id="ubtn"><span class="ti">↩</span><span class="tl">Undo</span></button>
+    <button class="tbtn" id="ebtn"><span class="ti">⌫</span><span class="tl">Erase</span></button>
+    <button class="tbtn" id="nbtn2"><span class="ti">✏️</span><span class="tl">Notes</span></button>
+    <button class="tbtn" id="hbtn"><span class="ti">💡</span><span class="tl">Hint</span><span class="hc" id="hc">3 left</span></button>
+  </div>
+  <div class="numpad" id="numpad"></div>
+  <button class="ngbtn" id="ngbtn">✨ New Game</button>
+  <div class="bp"></div>
+</div>
+<div class="overlay" id="wovl">
+  <div class="wcard">
+    <div class="wemoji">🎉</div>
+    <div class="wtitle">Puzzle Solved!</div>
+    <div class="wsub">Amazing! You completed the puzzle!</div>
+    <div class="wstats">
+      <div><div class="wsv" id="wt">—</div><div class="wsl">Time</div></div>
+      <div><div class="wsv" id="wm">0</div><div class="wsl">Mistakes</div></div>
+      <div><div class="wsv" id="wh">0</div><div class="wsl">Hints Used</div></div>
+    </div>
+    <button class="wbtn" id="wn">▶ Play Again</button>
+    <button class="wbtn sec" id="wh2">Try Harder Level ↑</button>
+  </div>
+</div>
+<div class="povl" id="povl">
+  <div style="font-size:52px">⏸</div>
+  <div class="ptxt">Game Paused</div>
+  <button class="rbtn" id="rbtn">▶ Resume</button>
+</div>
+<div class="toast" id="toast"></div>
+<div class="stars" id="stars"></div>
+<script>
+// ── SUDOKU ENGINE ──────────────────────────────────────────
+function genSolved(){const b=Array.from({length:9},()=>new Array(9).fill(0));solve(b,true);return b}
+function valid(b,r,c,n){for(let i=0;i<9;i++){if(b[r][i]===n||b[i][c]===n)return false;const br=3*Math.floor(r/3)+Math.floor(i/3),bc=3*Math.floor(c/3)+(i%3);if(b[br][bc]===n)return false}return true}
+function solve(b,sh=false){const ns=sh?[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-.5):[1,2,3,4,5,6,7,8,9];for(let r=0;r<9;r++)for(let c=0;c<9;c++){if(b[r][c]===0){for(const n of ns){if(valid(b,r,c,n)){b[r][c]=n;if(solve(b,sh))return true;b[r][c]=0}}return false}}return true}
+function countSol(b,lim=2){let cnt=0;function s(b){if(cnt>=lim)return;for(let r=0;r<9;r++)for(let c=0;c<9;c++){if(b[r][c]===0){for(let n=1;n<=9;n++){if(valid(b,r,c,n)){b[r][c]=n;s(b);b[r][c]=0}}return}}cnt++}s(b.map(r=>[...r]));return cnt}
+const CLUES={easy:38,medium:30,hard:26,expert:22};
+function genPuzzle(diff='easy'){
+  const sol=genSolved();const puz=sol.map(r=>[...r]);
+  const toRemove=81-(CLUES[diff]||30);let removed=0;
+  const pos=[...Array(81).keys()].sort(()=>Math.random()-.5);
+  for(const p of pos){if(removed>=toRemove)break;const r=Math.floor(p/9),c=p%9;const bk=puz[r][c];puz[r][c]=0;if(countSol(puz)===1)removed++;else puz[r][c]=bk}
+  return{puz,sol}
+}
+// ── STATE ─────────────────────────────────────────────────
+let S={puz:null,sol:null,board:null,given:null,notes:null,sel:null,mistakes:0,
+  hintsLeft:3,hintsUsed:0,notesMode:false,diff:'easy',timer:0,timerInt:null,
+  paused:false,history:[],over:false};
+// ── DOM ───────────────────────────────────────────────────
+const boardEl=document.getElementById('board'),numpadEl=document.getElementById('numpad'),
+  tdEl=document.getElementById('td'),mdEl=document.getElementById('md'),
+  hcEl=document.getElementById('hc'),nbtn2=document.getElementById('nbtn2'),
+  toastEl=document.getElementById('toast'),starsEl=document.getElementById('stars'),
+  wovl=document.getElementById('wovl'),povl=document.getElementById('povl');
+let toastTm=null;
+// ── INIT ──────────────────────────────────────────────────
+function initGame(diff){
+  S.diff=diff;clearInterval(S.timerInt);
+  const{puz,sol}=genPuzzle(diff);
+  S.puz=puz;S.sol=sol;S.board=puz.map(r=>[...r]);
+  S.given=puz.map(r=>r.map(v=>v!==0));
+  S.notes=Array.from({length:9},()=>Array.from({length:9},()=>new Set()));
+  S.sel=null;S.mistakes=0;S.hintsLeft=3;S.hintsUsed=0;
+  S.notesMode=false;S.timer=0;S.paused=false;S.history=[];S.over=false;
+  mdEl.textContent='0';tdEl.textContent='0:00';hcEl.textContent='3 left';
+  nbtn2.classList.remove('active');
+  wovl.classList.remove('show');povl.classList.remove('show');
+  renderBoard();renderNumpad();startTimer();
+}
+// ── RENDER ─────────────────────────────────────────────────
+function renderBoard(){
+  boardEl.innerHTML='';
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++){
+    const el=document.createElement('div');el.className='cell';
+    el.dataset.r=r;el.dataset.c=c;
+    const v=S.board[r][c],gv=S.given[r][c],ns=S.notes[r][c];
+    if(v!==0){
+      el.textContent=v;
+      if(gv)el.classList.add('given');else el.classList.add('input');
+      if(!gv&&v!==S.sol[r][c])el.classList.add('error');
+    }else if(ns.size>0){
+      const nd=document.createElement('div');nd.className='notes';
+      for(let n=1;n<=9;n++){const d=document.createElement('div');d.className='nn';d.textContent=ns.has(n)?n:'';nd.appendChild(d)}
+      el.appendChild(nd);
+    }
+    if(S.sel){
+      const{r:sr,c:sc}=S.sel;
+      if(r===sr&&c===sc)el.classList.add('selected');
+      else if(r===sr||c===sc||(Math.floor(r/3)===Math.floor(sr/3)&&Math.floor(c/3)===Math.floor(sc/3)))el.classList.add('related');
+      else if(v!==0&&S.board[sr][sc]!==0&&v===S.board[sr][sc])el.classList.add('samenum');
+    }
+    el.addEventListener('click',()=>{if(!S.over&&!S.paused){S.sel={r,c};renderBoard()}});
+    boardEl.appendChild(el);
+  }
+}
+function renderNumpad(){
+  numpadEl.innerHTML='';
+  for(let n=1;n<=9;n++){
+    const btn=document.createElement('button');btn.className='nbtn';btn.dataset.n=n;
+    let placed=0;for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(S.board[r][c]===n)placed++;
+    const rem=9-placed;
+    btn.innerHTML=n+`<span class="rem">${rem||''}</span>`;
+    if(rem===0)btn.classList.add('done');
+    btn.addEventListener('click',()=>onNum(n));
+    numpadEl.appendChild(btn);
+  }
+}
+// ── ACTIONS ───────────────────────────────────────────────
+function onNum(n){
+  if(S.over||S.paused||!S.sel)return;
+  const{r,c}=S.sel;if(S.given[r][c])return;
+  if(S.notesMode){
+    saveH();
+    if(S.notes[r][c].has(n))S.notes[r][c].delete(n);
+    else{S.notes[r][c].add(n);S.board[r][c]=0}
+    renderBoard();renderNumpad();return;
+  }
+  saveH();S.board[r][c]=n;S.notes[r][c].clear();
+  if(n!==S.sol[r][c]){S.mistakes++;mdEl.textContent=S.mistakes;showToast('✗ Incorrect — keep trying!')}
+  else{for(let i=0;i<9;i++){S.notes[r][i].delete(n);S.notes[i][c].delete(n)}
+    const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+    for(let dr=0;dr<3;dr++)for(let dc=0;dc<3;dc++)S.notes[br+dr][bc+dc].delete(n)}
+  renderBoard();renderNumpad();
+  if(isSolved())setTimeout(onWin,200);
+}
+function onErase(){
+  if(S.over||S.paused||!S.sel)return;
+  const{r,c}=S.sel;if(S.given[r][c])return;
+  saveH();S.board[r][c]=0;S.notes[r][c].clear();renderBoard();renderNumpad();
+}
+function onUndo(){
+  if(S.history.length===0){showToast('Nothing to undo');return}
+  const p=S.history.pop();S.board=p.board;S.notes=p.notes;S.sel=p.sel;
+  renderBoard();renderNumpad();
+}
+function onHint(){
+  if(S.over||S.paused)return;
+  if(S.hintsLeft<=0){showToast('No hints left!');return}
+  if(!S.sel){showToast('Select a cell first');return}
+  let{r,c}=S.sel;
+  if(S.given[r][c]||S.board[r][c]===S.sol[r][c]){
+    let found=false;
+    outer:for(let rr=0;rr<9;rr++)for(let cc=0;cc<9;cc++){if(!S.given[rr][cc]&&S.board[rr][cc]!==S.sol[rr][cc]){S.sel={r:rr,c:cc};r=rr;c=cc;found=true;break outer}}
+    if(!found)return;
+  }
+  saveH();S.board[r][c]=S.sol[r][c];S.notes[r][c].clear();
+  S.hintsLeft--;S.hintsUsed++;hcEl.textContent=S.hintsLeft+' left';
+  showToast('💡 Hint used!');renderBoard();renderNumpad();
+  if(isSolved())setTimeout(onWin,200);
+}
+function saveH(){
+  S.history.push({board:S.board.map(r=>[...r]),notes:S.notes.map(r=>r.map(s=>new Set(s))),sel:S.sel?{...S.sel}:null});
+  if(S.history.length>50)S.history.shift();
+}
+function isSolved(){for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(S.board[r][c]!==S.sol[r][c])return false;return true}
+// ── WIN ───────────────────────────────────────────────────
+function onWin(){
+  S.over=true;clearInterval(S.timerInt);celebrate();
+  document.getElementById('wt').textContent=fmt(S.timer);
+  document.getElementById('wm').textContent=S.mistakes;
+  document.getElementById('wh').textContent=S.hintsUsed;
+  setTimeout(()=>wovl.classList.add('show'),400);
+}
+function celebrate(){
+  const cols=['#4361ee','#f72585','#06d6a0','#ffd166','#7b2ff7','#ff6b6b'];
+  for(let i=0;i<60;i++)setTimeout(()=>{
+    const s=document.createElement('div');s.className='star';
+    s.style.left=Math.random()*100+'vw';s.style.top='-10px';
+    s.style.background=cols[Math.floor(Math.random()*cols.length)];
+    const sz=6+Math.random()*10+'px';s.style.width=sz;s.style.height=sz;
+    s.style.animationDuration=1+Math.random()*1.5+'s';
+    starsEl.appendChild(s);setTimeout(()=>s.remove(),3000);
+  },i*40);
+}
+// ── TIMER ─────────────────────────────────────────────────
+function startTimer(){clearInterval(S.timerInt);S.timerInt=setInterval(()=>{if(!S.paused&&!S.over){S.timer++;tdEl.textContent=fmt(S.timer)}},1000)}
+function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+// ── TOAST ─────────────────────────────────────────────────
+function showToast(msg){clearTimeout(toastTm);toastEl.textContent=msg;toastEl.classList.add('show');toastTm=setTimeout(()=>toastEl.classList.remove('show'),2000)}
+// ── KEYBOARD ─────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(S.over||S.paused)return;
+  const n=parseInt(e.key);
+  if(!isNaN(n)&&n>=1&&n<=9){onNum(n);return}
+  if(e.key==='Backspace'||e.key==='Delete'||e.key==='0'){onErase();return}
+  if(e.key==='u'){onUndo();return}
+  if(!S.sel)return;
+  const{r,c}=S.sel;const mv={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
+  if(mv[e.key]){const[dr,dc]=mv[e.key];S.sel={r:Math.max(0,Math.min(8,r+dr)),c:Math.max(0,Math.min(8,c+dc))};renderBoard();e.preventDefault()}
+});
+// ── EVENT LISTENERS ───────────────────────────────────────
+document.querySelectorAll('.dbtn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.dbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');initGame(b.dataset.d);
+}));
+nbtn2.addEventListener('click',()=>{S.notesMode=!S.notesMode;nbtn2.classList.toggle('active',S.notesMode);showToast(S.notesMode?'✏️ Notes ON':'✏️ Notes OFF')});
+document.getElementById('hbtn').addEventListener('click',onHint);
+document.getElementById('ubtn').addEventListener('click',onUndo);
+document.getElementById('ebtn').addEventListener('click',onErase);
+document.getElementById('ngbtn').addEventListener('click',()=>initGame(S.diff));
+document.getElementById('pbtn').addEventListener('click',()=>{if(S.over)return;S.paused=true;povl.classList.add('show');document.getElementById('pbtn').textContent='▶'});
+document.getElementById('rbtn').addEventListener('click',()=>{S.paused=false;povl.classList.remove('show');document.getElementById('pbtn').textContent='⏸'});
+document.getElementById('wn').addEventListener('click',()=>{wovl.classList.remove('show');initGame(S.diff)});
+document.getElementById('wh2').addEventListener('click',()=>{
+  const lvls=['easy','medium','hard','expert'],idx=lvls.indexOf(S.diff),nxt=lvls[Math.min(idx+1,3)];
+  document.querySelectorAll('.dbtn').forEach(b=>b.classList.toggle('active',b.dataset.d===nxt));
+  wovl.classList.remove('show');initGame(nxt);
+});
+// ── DARK MODE ─────────────────────────────────────────────
+const dmBtn=document.getElementById('dmbtn');
+let dark=localStorage.getItem('sudoku-dark')==='1'||(localStorage.getItem('sudoku-dark')===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+function applyDark(){
+  document.body.classList.toggle('dark',dark);
+  dmBtn.textContent=dark?'☀️':'🌙';
+  localStorage.setItem('sudoku-dark',dark?'1':'0');
+}
+dmBtn.addEventListener('click',()=>{dark=!dark;applyDark();showToast(dark?'🌙 Dark mode ON':'☀️ Light mode ON')});
+applyDark();
+// ── START ─────────────────────────────────────────────────
+initGame('easy');
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
+
+</body>
+</html>
