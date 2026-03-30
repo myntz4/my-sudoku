@@ -1,4 +1,4 @@
-const cacheName = 'sudoku-v2';
+const cacheName = 'sudoku-v3';
 const assets = [
   './',
   './index.html',
